@@ -1,6 +1,9 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <fstream>
+#include <cstdio>
+
 using namespace std;
 
 #include <stdio.h>
@@ -43,6 +46,68 @@ bool DoesPieceFit(int nTetromino, int nRotation, int nPosX, int nPosY) {
 		}
 
 	return true;
+}
+
+void readScores(int place[], int lbScore[]) {
+	fstream inFile;
+	inFile.open("Leaderboard.txt");
+	int i = 0;
+
+	while (inFile >> place[i])
+	{
+		
+		inFile >> lbScore[i];
+		i++;
+
+	}
+	inFile.close();
+}
+
+void writeScore(int place, int score, int lbScore[]) {
+	ofstream out ("temp.txt");
+	for (int j = 0; j < 25; j++)
+		out << j+1 << " " << lbScore[j] << endl;
+	out.close();
+	//cout << "Removed" << endl;
+	rename("Leaderboard.txt", "LeaderboardBP.txt");
+	remove("Leaderboard.txt");
+	rename("temp.txt", "Leaderboard.txt");
+	//cout << "Renamed" << endl;
+
+}
+
+
+
+void highScore(int place, int score, int lbScore[]) {
+	int temp = 0;
+	if (score > lbScore[place]) {
+		cout << "High Score!" << endl << "Place: " << place+1 << endl << endl;
+		for (int x = 24; x >= place; x--) {
+			//cout << x+1 << " " << place << " " << lbScore[x] << endl; <- Debug
+			temp = lbScore[x];
+			lbScore[x] = lbScore[x + 1];
+			lbScore[x + 1] = temp;
+		}
+
+		lbScore[place] = score;
+		writeScore(place, score, lbScore);
+	}
+}
+
+void saveScore(int score, int lbScore[]) {
+	int temp = 0;
+	int place = 25;
+	//for(int i = 0; i < 25-1; i++)
+		for (int t = 24; t >= 0; t--) {
+			if (score > lbScore[t]) {
+				//cout << score << " > " << lbScore[t] << " " << place << "  " << t << endl; // < - Debug Line 
+					if (place > 0) {
+					place--;
+				}
+
+			}
+		}
+	highScore(place, score, lbScore);
 }
 
 int main() {
@@ -113,8 +178,10 @@ int main() {
 
 
 	vector<int> vLines;
-
+	int place[26], lbScore[26];
 	while (!bGameOver) {
+
+		readScores(place, lbScore);
 		// GAME TIMING ==================
 		this_thread::sleep_for(50ms); // Game Tick
 		nSpeedCounter++;
@@ -226,7 +293,11 @@ int main() {
 	}
 
 	CloseHandle(hConsole);
-	cout << "Game Over, \nScore: " << nScore << endl;
+	cout << "Game Over, \nScore: " << nScore << endl << endl;
+	saveScore(nScore, lbScore);
+	cout << "Hall of Fame: " << endl;
+	for (int i = 0; i < 10; i++)
+		cout << "#" << i+1 << " Score: " << lbScore[i] << endl;
 	system("pause");
 
 
